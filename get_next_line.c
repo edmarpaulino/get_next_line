@@ -6,7 +6,7 @@
 /*   By: edpaulin <edpaulin@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/08/09 15:43:22 by edpaulin          #+#    #+#             */
-/*   Updated: 2021/08/11 16:59:44 by edpaulin         ###   ########.fr       */
+/*   Updated: 2021/08/11 20:03:54 by edpaulin         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,15 +16,33 @@
 # define BUFFER_SIZE 10
 #endif
 
+void	att_buffer(char **buffer, char	*read_buff)
+{
+	char	*tmp;
+
+	tmp = *buffer;
+	*buffer = ft_strjoin(tmp, read_buff);
+	free(tmp);
+	free(read_buff);
+}
+
+size_t	get_line_len(char	*buff, size_t	chars_read)
+{
+	size_t	len;
+
+	len = 0;
+	while (buff[len] != '\n' && buff[len] != '\0' && len < chars_read)
+		++len;
+	return (len);
+}
+
 char	*get_next_line(int	fd)
 {
 	static char	*buffer = NULL;
 	char		*buff;
-	char		*temp;
 	char		*line;
-	ssize_t		sz;
-	size_t		buffer_len;
-	int			i;
+	ssize_t		chars_read;
+	size_t		i;
 
 	if (fd < 0 || BUFFER_SIZE <= 0)
 		return (NULL);
@@ -33,18 +51,16 @@ char	*get_next_line(int	fd)
 		buff = (char *)malloc((BUFFER_SIZE + 1) * sizeof(*buff));
 		if (!buff)
 			return (NULL);
-		sz = read(fd, buff, BUFFER_SIZE);
-		if (sz <= 0)
+		chars_read = read(fd, buff, BUFFER_SIZE);
+		if (chars_read <= 0)
 		{
 			if (buffer)
 				free(buffer);
 			return (NULL);
 		}
-		i = 0;
-		buff[sz] = '\0';
-		while (buff[i] != '\n' && buff[i] != '\0')
-			++i;
-		if (i == sz)
+		buff[chars_read] = '\0';
+		i = get_line_len(buff, (size_t)chars_read);
+		if ( i == (size_t)chars_read)
 		{
 			if (!buffer)
 			{
@@ -54,31 +70,22 @@ char	*get_next_line(int	fd)
 			}
 			else
 			{
-				temp = buffer;
-				buffer = ft_strjoin(temp, buff);
-				free(temp);
-				free(buff);
+				att_buffer(&buffer, buff);
 				continue ;
 			}
 		}
 		if (buffer)
 		{
-			buffer_len = ft_strlen(buffer);
-			line = ft_strdup(buffer);
+			i = get_line_len(buffer, (size_t)chars_read);
+			line = ft_substr(buffer, 0, (i + 1));
 			free(buffer);
-			temp = line;
-			line = ft_strjoin(temp, buff);
-			free(temp);
-			temp = line;
-			line = ft_substr(temp, 0, buffer_len + i + 1);
-			free(temp);
-			buffer = ft_substr(buff, i + 1, ft_strlen(buff));
+			buffer = ft_substr(buff, i, chars_read);
 			free(buff);
 		}
 		else
 		{
-			line = ft_strdup(buff);
-			buffer = ft_substr(buff, i + 1, ft_strlen(buff));
+			line = ft_substr(buff, 0, i + 1);
+			buffer = ft_substr(buff, i, ft_strlen(buff));
 			free(buff);
 		}
 		break ;
