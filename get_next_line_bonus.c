@@ -1,16 +1,16 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   get_next_line.c                                    :+:      :+:    :+:   */
+/*   get_next_line_bonus.c                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: edpaulin <edpaulin@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/08/09 15:43:22 by edpaulin          #+#    #+#             */
-/*   Updated: 2021/08/13 14:23:05 by edpaulin         ###   ########.fr       */
+/*   Updated: 2021/08/13 14:43:48 by edpaulin         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "get_next_line.h"
+#include "get_next_line_bonus.h"
 
 int	is_line(char	*buffer)
 {
@@ -60,22 +60,22 @@ char	*get_line(char	**static_buffer, char	**line)
 
 char	*read_file(int	fd, char	**buffer)
 {
-	static char	*static_buffer = NULL;
+	static char	*static_buffer[OPEN_MAX];
 	char		*line;
 	ssize_t		n;
 
 	n = 1;
-	if (!static_buffer)
-		static_buffer = ft_strdup("");
-	while (!is_line(static_buffer) && n)
+	if (!static_buffer[fd])
+		static_buffer[fd] = ft_strdup("");
+	while (!is_line(static_buffer[fd]) && n)
 	{
 		n = read(fd, *buffer, BUFFER_SIZE);
 		(*buffer)[n] = '\0';
-		att_buffer(&static_buffer, buffer);
+		att_buffer(&static_buffer[fd], buffer);
 	}
 	free(*buffer);
 	*buffer = NULL;
-	return (get_line(&static_buffer, &line));
+	return (get_line(&static_buffer[fd], &line));
 }
 
 char	*get_next_line(int	fd)

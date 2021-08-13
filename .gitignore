@@ -1,8 +1,6 @@
-**.vscode
 *.out
 *.o
 *.a
 *.gch
 *.swp
 main.c
-**gnlTester
