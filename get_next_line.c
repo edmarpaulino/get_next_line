@@ -6,11 +6,23 @@
 /*   By: edpaulin <edpaulin@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/08/09 15:43:22 by edpaulin          #+#    #+#             */
-/*   Updated: 2021/08/13 14:23:05 by edpaulin         ###   ########.fr       */
+/*   Updated: 2021/08/14 10:25:17 by edpaulin         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line.h"
+
+/*
+*	IS_LINE
+*	
+*	DESCRIPTION
+*	This function checks if the string in the buffer contains a line.
+*	A line is defined by the '\n' character.
+*	
+*	RETURN VALUES
+*	If the buffer contains a line, the function returns 1; otherwise, 
+*	the function returns 0;
+*/
 
 int	is_line(char	*buffer)
 {
@@ -22,6 +34,13 @@ int	is_line(char	*buffer)
 	return (0);
 }
 
+/*
+*	ATT_BUFFER
+*	
+*	DESCRIPTION
+*	This function updates the static_buffer with the buffer.
+*/
+
 void	att_buffer(char	**static_buffer, char	**buffer)
 {
 	char	*temp;
@@ -30,6 +49,20 @@ void	att_buffer(char	**static_buffer, char	**buffer)
 	*static_buffer = ft_strjoin(temp, *buffer);
 	free(temp);
 }
+
+/*
+*	GET_LINE
+*	
+*	DESCRIPTION
+*	This function takes the line that contains in static_buffer, and checks
+*	if it has more content after the line, if it does, the function updates the
+*	static_buffer with that content.
+*	A line is defined by the '\n' character.
+*	
+*	RETURN VALUES
+*	If static_buffer contains a line, the function returns a pointer with that
+*	line; otherwise, the function returns a pointer to NULL;
+*/
 
 char	*get_line(char	**static_buffer, char	**line)
 {
@@ -58,6 +91,20 @@ char	*get_line(char	**static_buffer, char	**line)
 	return (*line);
 }
 
+/*
+*	READ_FILE
+*	
+*	DESCRIPTION
+*	This function reads a file descriptor with read(2) and checks if the read
+*	buffer has a line, if it doesn't have a line, the static_buffer is updated
+*	with the contents of the buffer.
+*	
+*	RETURN VALUES
+*	When the function finds a line or EOF, it returns the get_line function,
+*	otherwise, if the read(2) function fails to read the file descriptor, the
+*	function will return NULL;
+*/
+
 char	*read_file(int	fd, char	**buffer)
 {
 	static char	*static_buffer = NULL;
@@ -77,6 +124,18 @@ char	*read_file(int	fd, char	**buffer)
 	*buffer = NULL;
 	return (get_line(&static_buffer, &line));
 }
+
+/*
+*	GET_NEXT_LINE
+*
+*	DESCRIPTION
+*	Write a function which returns a line read from a
+*	file descriptor.
+*	
+*	RETURN VALUES
+*	Read line: correct behavior.
+*	NULL: nothing else to read or an error occurred.
+*/
 
 char	*get_next_line(int	fd)
 {
