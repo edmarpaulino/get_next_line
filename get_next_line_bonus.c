@@ -3,159 +3,104 @@
 /*                                                        :::      ::::::::   */
 /*   get_next_line_bonus.c                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: edpaulin <edpaulin@student.42.fr>          +#+  +:+       +#+        */
+/*   By: edpaulin <edpaulin@student.42sp.org.br>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/08/09 15:43:22 by edpaulin          #+#    #+#             */
-/*   Updated: 2021/08/14 15:48:52 by edpaulin         ###   ########.fr       */
+/*   Updated: 2021/12/24 10:31:52 by edpaulin         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line_bonus.h"
 
-/*
-*	IS_LINE
-*	
-*	DESCRIPTION
-*	This function checks if the string in the buffer contains a line.
-*	A line is defined by the '\n' character.
-*	
-*	RETURN VALUES
-*	If the buffer contains a line, the function returns 1; otherwise, 
-*	the function returns 0;
-*/
-
-int	is_line(char	*buffer)
+static ssize_t	has_line(char *static_buffer)
 {
-	while (*buffer)
+	ssize_t	i;
+
+	if (static_buffer)
 	{
-		if (*(buffer++) == '\n')
-			return (1);
+		i = 0;
+		while (static_buffer[i] != '\n' && static_buffer[i])
+			i++;
+		if (static_buffer[i] == '\n')
+			return (i);
 	}
-	return (0);
+	return (-1);
 }
 
-/*
-*	ATT_BUFFER
-*	
-*	DESCRIPTION
-*	This function updates the static_buffer with the buffer.
-*/
-
-void	att_buffer(char	**static_buffer, char	**buffer)
+static ssize_t	get_buffer(int fd, char **static_buffer)
 {
-	char	*temp;
+	char	*buffer;
+	char	*tmp;
+	ssize_t	ret;
 
-	temp = *static_buffer;
-	*static_buffer = ft_strjoin(temp, *buffer);
-	free(temp);
+	buffer = malloc((BUFFER_SIZE + 1) * sizeof(char *));
+	if (!buffer)
+		return (-1);
+	ret = read(fd, buffer, BUFFER_SIZE);
+	while (ret > 0)
+	{
+		buffer[ret] = '\0';
+		if (!*static_buffer)
+			*static_buffer = ft_strdup(buffer);
+		else
+		{
+			tmp = *static_buffer;
+			*static_buffer = ft_strjoin(tmp, buffer);
+			free(tmp);
+		}
+		if (has_line(*static_buffer) > 0)
+			break ;
+		ret = read(fd, buffer, BUFFER_SIZE);
+	}
+	free(buffer);
+	return (ret);
 }
 
-/*
-*	GET_LINE
-*	
-*	DESCRIPTION
-*	This function takes the line that contains in static_buffer, and checks
-*	if it has more content after the line, if it does, the function updates the
-*	static_buffer with that content.
-*	A line is defined by the '\n' character.
-*	
-*	RETURN VALUES
-*	If static_buffer contains a line, the function returns a pointer with that
-*	line; otherwise, the function returns a pointer to NULL;
-*/
-
-char	*get_line(char	**static_buffer, char	**line)
+static void	get_line(char **static_buffer, char **line)
 {
-	size_t	line_len;
-	char	*new_static_buffer;
+	ssize_t	i;
+	char	*tmp;
 
-	line_len = 0;
-	new_static_buffer = NULL;
-	while ((*static_buffer)[line_len] != '\n' \
-			&& (*static_buffer)[line_len] != '\0')
-		++line_len;
-	if ((*static_buffer)[line_len] == '\n')
+	if (*static_buffer)
 	{
-		*line = ft_substr(*static_buffer, 0, (line_len + 1));
-		new_static_buffer = ft_strdup(&(*static_buffer)[line_len + 1]);
+		i = has_line(*static_buffer);
+		if (i >= 0)
+		{
+			tmp = *static_buffer;
+			*line = ft_substr(tmp, 0, i + 1);
+			*static_buffer = ft_substr(tmp, i + 1, ft_strlen(tmp));
+			free(tmp);
+			if (ft_strlen(*static_buffer) == 0)
+			{
+				free(*static_buffer);
+				*static_buffer = NULL;
+			}
+		}
+		else
+		{
+			*line = ft_strdup(*static_buffer);
+			free(*static_buffer);
+			*static_buffer = NULL;
+		}
 	}
-	else
-		*line = ft_strdup(*static_buffer);
-	free(*static_buffer);
-	*static_buffer = new_static_buffer;
-	if (**line == '\0')
-	{
-		free(*line);
-		*line = NULL;
-	}
-	return (*line);
 }
 
-/*
-*	READ_FILE
-*	
-*	DESCRIPTION
-*	This function reads a file descriptor with read(2) and checks if the read
-*	buffer has a line, if it doesn't have a line, the static_buffer is updated
-*	with the contents of the buffer.
-*	
-*	RETURN VALUES
-*	When the function finds a line or EOF, it returns the get_line function,
-*	otherwise, if the read(2) function fails to read the file descriptor, the
-*	function will return NULL;
-*/
-
-char	*read_file(int	fd, char	**buffer)
+char	*get_next_line(int fd)
 {
 	static char	*static_buffer[OPEN_MAX];
 	char		*line;
-	ssize_t		n;
+	ssize_t		ret;
 
-	n = 1;
-	if (!static_buffer[fd])
-		static_buffer[fd] = ft_strdup("");
-	while (!is_line(static_buffer[fd]) && n)
+	if (fd < 0 || BUFFER_SIZE < 1)
+		return (NULL);
+	ret = get_buffer(fd, &static_buffer[fd]);
+	line = NULL;
+	if (ret == -1)
 	{
-		n = read(fd, *buffer, BUFFER_SIZE);
-		if (n < 0)
-		{
-			free(buffer);
+		if (static_buffer[fd])
 			free(static_buffer[fd]);
-			return (NULL);
-		}
-		(*buffer)[n] = '\0';
-		att_buffer(&static_buffer[fd], buffer);
 	}
-	free(*buffer);
-	*buffer = NULL;
-	return (get_line(&static_buffer[fd], &line));
-}
-
-/*
-*	GET_NEXT_LINE
-*
-*	DESCRIPTION
-*	Write a function which returns a line read from a
-*	file descriptor.
-*	
-*	RETURN VALUES
-*	Read line: correct behavior.
-*	NULL: nothing else to read or an error occurred.
-*/
-
-char	*get_next_line(int	fd)
-{
-	char		*buffer;
-
-	if (fd < 0 || BUFFER_SIZE <= 0)
-		return (NULL);
-	buffer = (char *)malloc((BUFFER_SIZE + 1) * sizeof(*buffer));
-	if (!buffer)
-		return (NULL);
-	if (read(fd, buffer, 0) < 0)
-	{
-		free(buffer);
-		return (NULL);
-	}
-	return (read_file(fd, &buffer));
+	else
+		get_line(&static_buffer[fd], &line);
+	return (line);
 }
